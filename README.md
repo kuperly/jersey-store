@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KIT ROOM – Headless jersey store
 
-## Getting Started
+Next.js 16 storefront (Hebrew, RTL) on top of Shopify. Next.js renders every page;
+Shopify keeps products, inventory, checkout, payments and order management.
 
-First, run the development server:
+## Stack
+- Next.js 16 (App Router, Cache Components) · React 19 · Tailwind CSS 4 · Motion
+- Shopify Storefront API `2026-01` (catalog, menus, pages, cart) · Shopify Checkout
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Setup
+1. In Shopify admin install the **Headless** sales channel and create a storefront.
+   Copy its **public access token**.
+2. Set environment variables (locally in `.env.local`, in production in Vercel):
+   ```
+   SHOPIFY_STORE_DOMAIN=sa7efa-th.myshopify.com
+   SHOPIFY_STOREFRONT_ACCESS_TOKEN=<public token>
+   ```
+3. `npm install && npm run dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Without the token the site still builds and shows a setup notice.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How the pieces fit
+| Area | Where |
+|---|---|
+| Storefront API client | `src/lib/shopify/client.ts` |
+| Catalog queries (cached with `use cache`, tag `shopify`) | `src/lib/shopify/catalog.ts` |
+| Cart (cookie `cartId`) + Server Functions | `src/lib/shopify/cart.ts`, `src/lib/cart-actions.ts` |
+| Menus | Shopify menus `main-menu`, `footer`, `footer-help` |
+| Collections on the homepage | handles in `src/app/page.tsx` / `CategoryRail.tsx` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Name / number personalization is stored as cart line attributes (`שם`, `מספר`) and
+appears on the order in the Shopify admin. Products tagged `personalizable` show the fields.

@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-ink: #0a0a0a;
+  --color-ink-soft: #18181b;
+  --color-brand: #ffd400;
+  --color-brand-dark: #e6bf00;
+  --color-sale: #e11d48;
+  --color-surface: #f4f4f5;
+  --font-sans: var(--font-heebo), system-ui, sans-serif;
+  --animate-marquee: marquee 35s linear infinite;
+  --animate-shimmer: shimmer 2.4s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(50%); }
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html { scroll-behavior: smooth; }
+body { background: #fff; color: var(--color-ink); }
+
+/* Yellow call-to-action with a moving highlight */
+.btn-brand {
+  background: linear-gradient(110deg, var(--color-brand) 40%, #fff3a6 50%, var(--color-brand) 60%);
+  background-size: 200% 100%;
+}
+.btn-brand:hover { animation: var(--animate-shimmer); }
+
+/* Hide scrollbars on horizontal rails while keeping them scrollable */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Rich text coming from Shopify (descriptions, pages) */
+.rte p { margin-block: 0.75em; }
+.rte ul { list-style: disc; padding-inline-start: 1.25rem; }
+.rte h2, .rte h3 { font-weight: 800; margin-block: 1em 0.5em; }
+.rte table { width: 100%; border-collapse: collapse; }
+.rte th, .rte td { border: 1px solid #e4e4e7; padding: 0.5rem; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
