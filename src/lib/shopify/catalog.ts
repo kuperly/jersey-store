@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from 'next/cache';
-import { isShopifyConfigured, shopifyFetch } from './client';
+import { hasStorefrontToken, isShopifyConfigured, shopifyFetch } from './client';
+import { FALLBACK_MENUS } from './fallback-menus';
 import { IMAGE, PRODUCT_CARD } from './fragments';
 import type { Collection, Filter, MenuItem, Page, Product, ProductCard } from './types';
 
@@ -8,6 +9,19 @@ import type { Collection, Filter, MenuItem, Page, Product, ProductCard } from '.
 function cacheCatalog() {
   cacheLife('minutes');
   cacheTag('shopify');
+}
+
+/**
+ * Catalog reads must never take the site down (e.g. while the store is locked
+ * before a plan is chosen): log the error and render the fallback instead.
+ */
+async function safely<T>(label: string, fallback: T, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`[shopify] ${label} failed:`, error instanceof Error ? error.message : error);
+    return fallback;
+  }
 }
 
 /** Turns an absolute Shopify URL into a path on this storefront. */
@@ -26,8 +40,10 @@ export async function getMenu(handle: string): Promise<MenuItem[]> {
   'use cache';
   cacheCatalog();
   if (!isShopifyConfigured) return [];
+  // Menus need a Storefront token; tokenless mode uses the built-in copy.
+  if (!hasStorefrontToken) return FALLBACK_MENUS[handle] ?? [];
 
-  const data = await shopifyFetch<{ menu: { items: RawMenuItem[] } | null }>(
+  const data = await safely('menu', { menu: null }, () => shopifyFetch<{ menu: { items: RawMenuItem[] } | null }>(
     /* GraphQL */ `
       query Menu($handle: String!) @inContext(country: IL, language: HE) {
         menu(handle: $handle) {
@@ -36,7 +52,7 @@ export async function getMenu(handle: string): Promise<MenuItem[]> {
       }
     `,
     { handle },
-  );
+  ));
 
   const map = (items: RawMenuItem[] = []): MenuItem[] =>
     items.map((i) => ({ title: i.title, path: toPath(i.url), items: map(i.items) }));
@@ -70,7 +86,7 @@ export async function getCollectionProducts(
     }
   });
 
-  const data = await shopifyFetch<{
+  const data = await safely('collection', { collection: null }, () => shopifyFetch<{
     collection:
       | (Collection & { products: { filters: Filter[]; nodes: ProductCard[] } })
       | null;
@@ -97,8 +113,8 @@ export async function getCollectionProducts(
       ${IMAGE}
       ${PRODUCT_CARD}
     `,
-    { handle, first: options.first ?? 48, sortKey, reverse, filters },
-  );
+    { handle, first: options.first ?? 36, sortKey, reverse, filters },
+  ));
 
   if (!data.collection) return null;
   const { products, ...collection } = data.collection;
@@ -110,7 +126,7 @@ export async function getCollections(handles: string[]): Promise<Collection[]> {
   cacheCatalog();
   if (!isShopifyConfigured) return [];
 
-  const results = await Promise.all(
+  const results = await safely('collections', [] as (Collection | null)[], () => Promise.all(
     handles.map((handle) =>
       shopifyFetch<{ collection: Collection | null }>(
         /* GraphQL */ `
@@ -122,7 +138,7 @@ export async function getCollections(handles: string[]): Promise<Collection[]> {
         { handle },
       ).then((d) => d.collection),
     ),
-  );
+  ));
   return results.filter((c): c is Collection => c !== null);
 }
 
@@ -131,7 +147,7 @@ export async function getProduct(handle: string): Promise<Product | null> {
   cacheCatalog();
   if (!isShopifyConfigured) return null;
 
-  const data = await shopifyFetch<{ product: Product | null }>(
+  const data = await safely('product', { product: null }, () => shopifyFetch<{ product: Product | null }>(
     /* GraphQL */ `
       query Product($handle: String!) @inContext(country: IL, language: HE) {
         product(handle: $handle) {
@@ -158,7 +174,7 @@ export async function getProduct(handle: string): Promise<Product | null> {
       ${PRODUCT_CARD}
     `,
     { handle },
-  );
+  ));
   return data.product;
 }
 
@@ -167,7 +183,7 @@ export async function getRecommendations(productId: string): Promise<ProductCard
   cacheCatalog();
   if (!isShopifyConfigured) return [];
 
-  const data = await shopifyFetch<{ productRecommendations: ProductCard[] | null }>(
+  const data = await safely('recommendations', { productRecommendations: null }, () => shopifyFetch<{ productRecommendations: ProductCard[] | null }>(
     /* GraphQL */ `
       query Recommendations($productId: ID!) @inContext(country: IL, language: HE) {
         productRecommendations(productId: $productId) { ...ProductCardFields }
@@ -176,7 +192,7 @@ export async function getRecommendations(productId: string): Promise<ProductCard
       ${PRODUCT_CARD}
     `,
     { productId },
-  );
+  ));
   return (data.productRecommendations ?? []).slice(0, 8);
 }
 
@@ -185,7 +201,7 @@ export async function searchProducts(query: string): Promise<ProductCard[]> {
   cacheCatalog();
   if (!isShopifyConfigured || !query) return [];
 
-  const data = await shopifyFetch<{ search: { nodes: ProductCard[] } }>(
+  const data = await safely('search', { search: { nodes: [] } }, () => shopifyFetch<{ search: { nodes: ProductCard[] } }>(
     /* GraphQL */ `
       query Search($query: String!) @inContext(country: IL, language: HE) {
         search(query: $query, first: 48, types: PRODUCT, prefix: LAST) {
@@ -196,7 +212,7 @@ export async function searchProducts(query: string): Promise<ProductCard[]> {
       ${PRODUCT_CARD}
     `,
     { query },
-  );
+  ));
   return data.search.nodes;
 }
 
@@ -205,13 +221,13 @@ export async function getPage(handle: string): Promise<Page | null> {
   cacheCatalog();
   if (!isShopifyConfigured) return null;
 
-  const data = await shopifyFetch<{ page: Page | null }>(
+  const data = await safely('page', { page: null }, () => shopifyFetch<{ page: Page | null }>(
     /* GraphQL */ `
       query Page($handle: String!) @inContext(country: IL, language: HE) {
         page(handle: $handle) { title body seo { title description } }
       }
     `,
     { handle },
-  );
+  ));
   return data.page;
 }

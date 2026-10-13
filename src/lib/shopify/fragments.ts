@@ -1,3 +1,5 @@
+import { hasStorefrontToken } from './client';
+
 export const IMAGE = /* GraphQL */ `
   fragment ImageFields on Image { url altText width height }
 `;
@@ -8,7 +10,8 @@ export const PRODUCT_CARD = /* GraphQL */ `
     handle
     title
     availableForSale
-    tags
+    productType
+    ${hasStorefrontToken ? 'tags' : ''}
     featuredImage { ...ImageFields }
     images(first: 2) { nodes { ...ImageFields } }
     priceRange { minVariantPrice { amount currencyCode } }
@@ -22,7 +25,7 @@ export const CART = /* GraphQL */ `
     checkoutUrl
     totalQuantity
     cost { subtotalAmount { amount currencyCode } totalAmount { amount currencyCode } }
-    lines(first: 100) {
+    lines(first: 50) {
       nodes {
         id
         quantity

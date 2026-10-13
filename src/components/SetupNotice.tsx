@@ -5,7 +5,7 @@ export function SetupNotice() {
   if (isShopifyConfigured) return null;
   return (
     <div className="bg-brand px-4 py-3 text-center text-sm font-semibold text-ink">
-      החנות עדיין לא מחוברת ל-Shopify: חסר SHOPIFY_STOREFRONT_ACCESS_TOKEN בהגדרות הסביבה.
+      החנות עדיין לא מחוברת ל-Shopify: חסר SHOPIFY_STORE_DOMAIN בהגדרות הסביבה.
     </div>
   );
 }

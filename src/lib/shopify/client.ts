@@ -3,8 +3,14 @@ const API_VERSION = '2026-01';
 const domain = process.env.SHOPIFY_STORE_DOMAIN;
 const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
-/** True once both Storefront env vars are set (see .env.example). */
-export const isShopifyConfigured = Boolean(domain && token);
+/** True once the store domain is set. The token is optional (see below). */
+export const isShopifyConfigured = Boolean(domain);
+
+/**
+ * Without a token the Storefront API runs in "tokenless" mode: products, collections,
+ * search, pages and cart work, but menus and product tags need a token.
+ */
+export const hasStorefrontToken = Boolean(token);
 
 export class ShopifyError extends Error {}
 
@@ -19,7 +25,7 @@ export async function shopifyFetch<T>(query: string, variables: Record<string, u
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': token!,
+      ...(token ? { 'X-Shopify-Storefront-Access-Token': token } : {}),
     },
     body: JSON.stringify({ query, variables }),
     cache: 'no-store',

@@ -7,7 +7,9 @@ export type ProductCard = {
   handle: string;
   title: string;
   availableForSale: boolean;
-  tags: string[];
+  productType: string;
+  /** Only present when a Storefront token is configured. */
+  tags?: string[];
   featuredImage: Image | null;
   images: { nodes: Image[] };
   priceRange: { minVariantPrice: Money };
@@ -72,3 +74,9 @@ export type Cart = {
 };
 
 export type Page = { title: string; body: string; seo: { title: string | null; description: string | null } };
+
+/** Jerseys and kits can carry a printed name and number. */
+export function isPersonalizable(product: Pick<ProductCard, 'tags' | 'productType'>): boolean {
+  if (product.tags?.includes('personalizable')) return true;
+  return /jersey|kit/i.test(product.productType);
+}

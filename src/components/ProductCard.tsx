@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { discountPercent, formatMoney } from '@/lib/format';
-import type { ProductCard as Product } from '@/lib/shopify/types';
+import { isPersonalizable, type ProductCard as Product } from '@/lib/shopify/types';
 
 export function ProductCard({ product }: { product: Product }) {
   const price = product.priceRange.minVariantPrice;
@@ -25,10 +25,10 @@ export function ProductCard({ product }: { product: Product }) {
         )}
         <div className="absolute top-3 right-3 flex flex-col items-start gap-1.5">
           {off && <span className="rounded-full bg-sale px-2.5 py-1 text-xs font-bold text-white">-{off}%</span>}
-          {product.tags.includes('new') && <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-white">חדש</span>}
+          {product.tags?.includes('new') && <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-white">חדש</span>}
           {!product.availableForSale && <span className="rounded-full bg-zinc-500 px-2.5 py-1 text-xs font-bold text-white">אזל</span>}
         </div>
-        {product.tags.includes('personalizable') && (
+        {isPersonalizable(product) && (
           <span className="absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold backdrop-blur">🖨️ הדפסת שם</span>
         )}
       </div>

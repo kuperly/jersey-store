@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { motion } from 'motion/react';
 import { addToCart } from '@/lib/cart-actions';
 import { discountPercent, formatMoney } from '@/lib/format';
-import type { Product } from '@/lib/shopify/types';
+import { isPersonalizable, type Product } from '@/lib/shopify/types';
 import { OPEN_CART_EVENT } from './CartDrawer';
 
 export function ProductForm({ product }: { product: Product }) {
@@ -22,7 +22,7 @@ export function ProductForm({ product }: { product: Product }) {
     () => variants.find((v) => v.selectedOptions.every((o) => selected[o.name] === o.value)),
     [variants, selected],
   );
-  const personalizable = product.tags.includes('personalizable');
+  const personalizable = isPersonalizable(product);
   const hasOptions = !(product.options.length === 1 && product.options[0].optionValues.length === 1);
   const off = variant ? discountPercent(variant.price, variant.compareAtPrice) : null;
 
